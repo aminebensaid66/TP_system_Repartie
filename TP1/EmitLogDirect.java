@@ -1,0 +1,52 @@
+import com.rabbitmq.client.BuiltinExchangeType;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+public class EmitLogDirect {
+    private static final String EXCHANGE_NAME = "direct_logs";
+
+    public static void main(String[] argv) throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+
+        try (Connection connection = factory.newConnection();
+             Channel channel = connection.createChannel()) {
+
+            channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+
+            String severity = getSeverity(argv);
+            String message = getMessage(argv);
+
+            channel.basicPublish(EXCHANGE_NAME, severity, null, message.getBytes("UTF-8"));
+            System.out.println(" [x] Sent '" + severity + "':'" + message + "'");
+        }
+    }
+
+    private static String getSeverity(String[] argv) {
+        if (argv.length < 1) {
+            return "info";
+        }
+        return argv[0];
+    }
+
+    private static String getMessage(String[] argv) {
+        if (argv.length < 2) {
+            return "Hello World!";
+        }
+        return joinStrings(argv, " ", 1);
+    }
+
+    private static String joinStrings(String[] argv, String delimiter, int startIndex) {
+        int length = argv.length;
+        if (length == 0 || startIndex >= length) {
+            return "";
+        }
+
+        StringBuilder words = new StringBuilder(argv[startIndex]);
+        for (int i = startIndex + 1; i < length; i++) {
+            words.append(delimiter).append(argv[i]);
+        }
+        return words.toString();
+    }
+}
